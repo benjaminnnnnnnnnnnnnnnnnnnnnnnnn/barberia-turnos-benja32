@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>benja.barber32 - Admin</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+    import { getFirestore, doc, getDocs, collection, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDuEFpYn1RHG6OSrccVvv_fnUavvi7Pmuc",
+      authDomain: "benja-barber32.firebaseapp.com",
+      projectId: "benja-barber32",
+      storageBucket: "benja-barber32.firebasestorage.app",
+      messagingSenderId: "311518703190",
+      appId: "1:311518703190:web:d99c1f94f703d2413c55f7",
+      measurementId: "G-NG7PTS4FHC"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let esAdmin = false;
+
+    onAuthStateChanged(auth, user => {
+      esAdmin = !!user;
+      document.getElementById("adminPanel").style.display = esAdmin ? "block" : "none";
+      document.getElementById("loginPanel").style.display = esAdmin ? "none" : "block";
+      if(esAdmin) cargarTurnosAdmin();
+    });
+
+    window.login = async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      try { await signInWithEmailAndPassword(auth, email, password); }
+      catch(err){ alert(err.message); }
+    }
+
+    window.logout = async () => {
+      await signOut(auth);
+      location.reload();
+    }
+
+    async function cargarTurnosAdmin(){
+      const adminLista = document.getElementById("turnosAdmin");
+      adminLista.innerHTML = "";
+      const snapshot = await getDocs(collection(db,"turnos"));
+
+      if(snapshot.empty){
+        adminLista.innerHTML = "<p>No hay turnos reservados aún.</p>";
+        return;
+      }
+
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const docId = docSnap.id;
+
+        const fila = document.createElement("div");
+        fila.className = "filaAdmin";
+        fila.innerHTML = `<strong>${docId}</strong> - ${data.nombre} 
+          <button class="modificarBtn">Modificar</button>
+          <button class="cancelarBtn">Cancelar</button>`;
+        
+        fila.querySelector(".cancelarBtn").onclick = async () => {
+          if(confirm("Cancelar este turno?")){
+            await deleteDoc(doc(db,"turnos",docId));
+            cargarTurnosAdmin();
+          }
+        }
+
+        fila.querySelector(".modificarBtn").onclick = async () => {
+          const nuevoNombre = prompt("Nuevo nombre:", data.nombre);
+          if(nuevoNombre) {
+            await setDoc(doc(db,"turnos",docId), {nombre:nuevoNombre});
+            cargarTurnosAdmin();
+          }
+        }
+
+        adminLista.appendChild(fila);
+      });
+    }
+  </script>
+
+  <style>
+    body { margin:0; font-family:'Segoe UI',sans-serif; background:#111; color:white; padding:20px; }
+    h1 { text-align:center; color:#00ff88; }
+    #loginPanel, #adminPanel { background: rgba(0,0,0,0.7); padding:15px; border-radius:12px; margin-bottom:20px; max-width:600px; margin:auto; }
+    input { padding:8px; width:100%; margin-top:5px; border-radius:8px; border:none; outline:none; }
+    button { padding:8px; border:none; border-radius:8px; background:#00ff88; color:#111; font-weight:bold; cursor:pointer; margin-top:5px; width:100%; }
+    button:hover { background:#00cc66; }
+    #turnosAdmin { margin-top:10px; max-width:600px; margin:auto; }
+    .filaAdmin { display:flex; justify-content:space-between; background:#333; padding:8px; margin:5px 0; border-radius:8px; align-items:center; flex-wrap:wrap; }
+    .filaAdmin button { width:auto; padding:5px 10px; margin-left:5px; }
+    .cancelarBtn { background:#ff4444; color:white; }
+    .cancelarBtn:hover { background:#cc0000; }
+  </style>
+</head>
+<body>
+  <h1>💈 benja.barber32 - Admin</h1>
+
+  <div id="loginPanel">
+    <h3>Login Admin</h3>
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Contraseña">
+    <button onclick="login()">Entrar</button>
+  </div>
+
+  <div id="adminPanel" style="display:none;">
+    <button onclick="logout()">Cerrar sesión</button>
+    <div id="turnosAdmin"></div>
+  </div>
+</body>
+</html>

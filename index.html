@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>benja.barber32 - Reservas</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDuEFpYn1RHG6OSrccVvv_fnUavvi7Pmuc",
+      authDomain: "benja-barber32.firebaseapp.com",
+      projectId: "benja-barber32",
+      storageBucket: "benja-barber32.firebasestorage.app",
+      messagingSenderId: "311518703190",
+      appId: "1:311518703190:web:d99c1f94f703d2413c55f7",
+      measurementId: "G-NG7PTS4FHC"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const dias = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+    const horarios = ["14:00","15:00","16:00","17:00","18:00","19:00"];
+
+    async function cargarAgenda(){
+      const agenda = document.getElementById("agenda");
+      agenda.innerHTML = "";
+
+      for(const dia of dias){
+        const diaContainer = document.createElement("div");
+        diaContainer.className = "diaContainer";
+
+        const titulo = document.createElement("h2");
+        titulo.innerText = dia;
+        diaContainer.appendChild(titulo);
+
+        const fila = document.createElement("div");
+        fila.className = "fila-turnos";
+
+        for(const hora of horarios){
+          const docId = dia + "_" + hora;
+          const docRef = doc(db,"turnos",docId);
+          const docSnap = await getDoc(docRef);
+
+          const turno = document.createElement("div");
+          turno.className = "hora";
+
+          if(docSnap.exists()){
+            turno.classList.add("ocupado");
+            turno.innerText = hora + " - OCUPADO";
+          } else {
+            turno.classList.add("libre");
+            turno.innerHTML = `${hora} - Libre <br><input type="text" placeholder="Tu nombre" class="nombreInput"><button class="reservarBtn">Reservar</button>`;
+            const input = turno.querySelector(".nombreInput");
+            const btn = turno.querySelector(".reservarBtn");
+            btn.onclick = async () => {
+              const nombre = input.value.trim();
+              if(nombre){
+                await setDoc(docRef, {nombre});
+                alert("Turno reservado con éxito!");
+                cargarAgenda();
+              } else {
+                alert("Ingresa tu nombre");
+              }
+            }
+          }
+
+          fila.appendChild(turno);
+        }
+
+        diaContainer.appendChild(fila);
+        agenda.appendChild(diaContainer);
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      await cargarAgenda();
+    });
+  </script>
+
+  <style>
+    body { margin:0; font-family:'Segoe UI',sans-serif; background:#111; color:white; padding:20px; }
+    h1 { text-align:center; color:#00ff88; }
+    .diaContainer { margin-bottom:25px; }
+    .fila-turnos { display:flex; flex-wrap:wrap; gap:10px; }
+    .hora { padding:12px; border-radius:12px; min-width:140px; text-align:center; font-weight:bold; cursor:pointer; box-shadow:0 0 10px #000; transition:0.3s; }
+    .libre { background:#00cc44; color:white; }
+    .libre:hover { background:#00ff88; }
+    .ocupado { background:#cc0000; color:white; }
+    .ocupado:hover { background:#ff4444; }
+    input { padding:8px; width:100%; margin-top:5px; border-radius:8px; border:none; outline:none; }
+    button { padding:8px; border:none; border-radius:8px; background:#00ff88; color:#111; font-weight:bold; cursor:pointer; margin-top:5px; width:100%; }
+    button:hover { background:#00cc66; }
+    @media(max-width:900px){ .hora { min-width:120px; font-size:0.9em; } }
+  </style>
+</head>
+<body>
+  <h1>💈 benja.barber32 - Reservas</h1>
+  <div id="agenda"></div>
+</body>
+</html>
